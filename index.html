@@ -3,9 +3,89 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Document</title>
+    <title>Image Shuffler</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
 </head>
 <body>
-    
+    <div id="vue">
+        <input id="albumLink" name="albumLink" v-model="albumUrl">
+        <button @click="shuffle(albumUrl)">Shuffle!</button>
+        <br>
+        <p v-if="message">{{message}}</p>
+        <img :src="imageSrc"></img>
+    </div>
 </body>
+<script>
+    let imgurUrlPattern = /^http(?:s)?\:\/{2}imgur\.com\/a\/(.*)$/;
+    let vue = new Vue({
+        el: '#vue',
+        data: {
+            imageSrc: 'https://upload.wikimedia.org/wikipedia/commons/e/e9/Imgur_logo.svg',
+            albumUrl: '',
+            message: false,
+            images: [],
+        },
+        methods: {
+            shuffle(albumLink) {
+                if (!imgurUrlPattern.test(albumLink)) {
+                    throw 'This is not imgur-album url';
+                    return;
+                }
+                let albumId = imgurUrlPattern.exec(albumLink)[1];
+                fetch(`https://api.imgur.com/3/album/${albumId}`, {
+                    headers: {
+                        Authorization: 'Client-ID 0b80b885e3d6809'
+                    }
+                })
+                .then(result => {
+                    if (result.ok) {
+                        return result.json()
+                    } else {
+                        throw 'There is an error while getting album information';
+                    }
+                })
+                .then(json => {
+                    if (json.data && json.data.images) {
+                        this.images = json.data.images.map(el => {
+                            return el.link;
+                        })
+                        return fetch('https://api.random.org/json-rpc/1/invoke', {
+                            body: JSON.stringify({
+                                "jsonrpc": "2.0",
+                                "method": "generateIntegers",
+                                "params": {
+                                    "apiKey": "14192d4a-d37a-46f6-b47f-38c6d474dbf3",
+                                    "n": 1,
+                                    "min": 0,
+                                    "max": this.images.length - 1,
+                                    "replacement": true
+                                },
+                                "id": 42
+                            }),
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        })
+                    } else {
+                        throw 'imgur data processing error';
+                    }
+                })
+                .then(result => {
+                    if (result.ok) {
+                        return result.json()
+                    } else {
+                        throw 'There is an error while getting album information';
+                    }
+                })
+                .then(json => {
+                    if (json.result && json.result.random && json.result.random.data) {
+                        this.imageSrc = this.images[json.result.random.data[0]]
+                    }
+                })
+            }
+        }
+    });
+</script>
 </html>

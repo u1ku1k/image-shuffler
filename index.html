@@ -28,6 +28,24 @@
                 </div>
             </div>
         </div>
+        <div class="modal fade" id="errorModal" tabindex="-1" role="dialog" aria-labelledby="errorModalTitle" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="errorModalTitle">Error</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    {{message}}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                </div>
+                </div>
+            </div>
+        </div>
     </div>
 </body>
 <script>
@@ -81,7 +99,7 @@
                     if (result.ok) {
                         return result.json()
                     } else {
-                        throw 'There is an error while getting album information';
+                        throw 'There was an error while getting the album information';
                     }
                 })
                 .then(json => {
@@ -107,14 +125,14 @@
                             }
                         })
                     } else {
-                        throw 'Imgur data processing error';
+                        throw 'There was an error while imgur data processing';
                     }
                 })
                 .then(result => {
                     if (result.ok) {
                         return result.json()
                     } else {
-                        throw 'There is an error while getting random number';
+                        throw 'There was an error while getting a random number';
                     }
                 })
                 .then(json => {
@@ -128,6 +146,7 @@
                     this.showLoader = false;
                     this.title = '';
                     this.message = err;
+                    $('#errorModal').modal();
                 })
             }
         }

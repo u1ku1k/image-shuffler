@@ -12,45 +12,19 @@
 </head>
 <body>
     <div id="vue" class="h-100">
-        <div class="container h-100 d-flex align-items-center justify-content-center">
+        <div class="container h-100 d-flex align-items-center justify-content-center flex-column" :style="baseContainerStyle">
             <div class="card text-center mt-3 w-100">
                 <div class="card-header">
                     Image Shuffler
                 </div>
                 <div class="card-body">
                     <div class="input-group mb-3">
-                        <input v-model="albumUrl" @keyup.enter="shuffle(albumUrl)" type="text" class="form-control" placeholder="Imgur Album Url" aria-label="Imgur Album Url">
+                        <input v-model="albumUrl" @keyup.enter="onBtnClick(albumUrl)" :disabled="showLoader" type="text" class="form-control" placeholder="Imgur Album Url" aria-label="Imgur Album Url">
                         <div class="input-group-append">
-                            <button class="btn btn-outline-primary" type="button" @click="shuffle(albumUrl)">Shuffle!</button>
+                            <button class="btn btn-outline-primary" type="button" @click="onBtnClick(albumUrl)" :disabled="showLoader">Shuffle!</button>
                         </div>
                     </div>
-                </div>
-            </div>
-            <p v-if="message">{{message}}</p>
-            <div class="modal fade" id="resultModal" tabindex="-1" role="dialog" aria-labelledby="resultModalTitle" aria-hidden="true">
-                <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-                    <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="exampleModalLongTitle">{{title}}</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="card mb-3 w-100 mt-3" v-if="currentImage.link">
-                            <a :href="currentImage.link" target="_blank">
-                                <img class="card-img-top img-fluid" :src="currentImage.link" :alt="currentImage.description">
-                            </a>
-                            <div class="card-body" v-if="currentImage.description">
-                                <p class="card-text">{{currentImage.description}}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                        <button type="button" class="btn btn-primary" @click="shuffle(albumUrl)">Reshuffle</button>
-                    </div>
-                    </div>
+                    <div class="card w-100 h-50" v-if="currentImage.link" :style="bgImageStyle"></div>
                 </div>
             </div>
         </div>
@@ -68,14 +42,36 @@
             title: '',
             showLoader: false
         },
+        computed: {
+            bgImageStyle() {
+                return this.currentImage.link ? `background-image: url(${this.currentImage.link}); 
+                background-position: center center;
+                background-repeat: no-repeat;
+                background-size: contain;` : '';
+            },
+            baseContainerStyle() {
+                return this.showLoader ? `background-color: #fff; opacity: 0.5;` : '';
+            }
+        },
+        mounted() {
+            let hash = window.location.hash;
+            if (!!hash && hash.length > 1) {
+                let albumId = hash.substr(1);
+                this.albumUrl = `https://imgur.com/a/${albumId}`;
+                this.shuffle(albumId);
+            }
+        },
         methods: {
-            shuffle(albumLink) {
-                this.showLoader = true;
+            onBtnClick(albumLink) {
                 if (!imgurUrlPattern.test(albumLink)) {
                     throw 'This is not imgur-album url';
                     return;
                 }
                 let albumId = imgurUrlPattern.exec(albumLink)[1];
+                this.shuffle(albumId);
+            },
+            shuffle(albumId) {
+                this.showLoader = true;
                 fetch(`https://api.imgur.com/3/album/${albumId}`, {
                     headers: {
                         Authorization: 'Client-ID 0b80b885e3d6809'
@@ -125,7 +121,7 @@
                     if (json.result && json.result.random && json.result.random.data) {
                         this.currentImage = this.images[json.result.random.data[0]];
                         this.showLoader = false;
-                        $('#resultModal').modal();
+                        window.location.hash = `#${albumId}`;
                     }
                 })
                 .catch(err => {

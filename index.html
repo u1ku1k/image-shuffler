@@ -81,11 +81,9 @@
         el: '#vue',
         data: {
             album: {},
-            currentImage: {},
             albumUrl: '',
-            message: false,
-            images: [],
-            title: '',
+            currentImage: {},
+            error: false,
             showLoader: false
         },
         computed: {
@@ -113,8 +111,7 @@
         methods: {
             onBtnClick(albumLink) {
                 if (!imgurUrlPattern.test(albumLink)) {
-                    this.message = 'This is not imgur-album url';
-                    $('#errorModal').modal();
+                    this.showError('This is not imgur-album url');
                     return;
                 }
                 let albumId = imgurUrlPattern.exec(albumLink)[1];
@@ -145,18 +142,21 @@
                         window.location.hash = `#${albumId}`;
                         this.shuffle();
                     } else {
-                        throw 'This album corrupted or does not have images';
+                        throw 'This album was corrupted or does not have images';
                     }
                 })
                 .catch(err => {
                     this.showLoader = false;
-                    this.message = err;
-                    $('#errorModal').modal();
+                    this.showError(err);
                 })
             },
             shuffle() {
                 let images = this.album.images;
                 this.currentImage = images[Math.floor(Math.random()*images.length)];
+            },
+            showError(err) {
+                this.error = err;
+                $('#errorModal').modal();
             }
         }
     });

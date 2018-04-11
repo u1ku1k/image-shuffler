@@ -9,22 +9,49 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+    <style>
+        .flex-grow {
+            flex: 1 0 auto;
+        }
+    </style>
 </head>
 <body>
     <div id="vue" class="h-100">
-        <div class="container h-100 d-flex align-items-center justify-content-center flex-column" :style="baseContainerStyle">
-            <div class="card text-center mt-3 w-100">
+        <div class="container-fluid h-100 d-flex align-items-center justify-content-center flex-column" v-if="currentImage.link" :style="baseContainerStyle">
+            <div class="card text-center m-3 w-100 h-100">
                 <div class="card-header">
                     Image Shuffler
                 </div>
-                <div class="card-body">
+                <div class="card-body d-flex flex-column flex-grow">
                     <div class="input-group mb-3">
                         <input v-model="albumUrl" @keyup.enter="onBtnClick(albumUrl)" :disabled="showLoader" type="text" class="form-control" placeholder="Imgur Album Url" aria-label="Imgur Album Url">
                         <div class="input-group-append">
                             <button class="btn btn-outline-primary" type="button" @click="onBtnClick(albumUrl)" :disabled="showLoader">Shuffle!</button>
                         </div>
                     </div>
-                    <div class="card w-100 h-50" v-if="currentImage.link" :style="bgImageStyle"></div>
+                    <div class="card flex-grow" :style="bgImageStyle"></div>
+                    <div style="margin-top: 1.25rem;">
+                        <span>{{currentImage.description}}</span>
+                        <ul class="list-inline" style=" margin-bottom: 0;">
+                            <li class="list-inline-item">Album: <a :href="albumUrl" target="_blank">{{title}}</a></li>
+                            <li class="list-inline-item"><a :href="currentImageImgurLink" target="_blank">Open this image on imgur</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div v-else class="container-fluid h-100 d-flex align-items-center justify-content-center flex-column" :style="baseContainerStyle">
+            <div class="card text-center m-3 w-75">
+                <div class="card-header">
+                    Image Shuffler
+                </div>
+                <div class="card-body d-flex flex-column flex-grow">
+                    <div class="input-group mb-3">
+                        <input v-model="albumUrl" @keyup.enter="onBtnClick(albumUrl)" :disabled="showLoader" type="text" class="form-control" placeholder="Imgur Album Url" aria-label="Imgur Album Url">
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-primary" type="button" @click="onBtnClick(albumUrl)" :disabled="showLoader">Shuffle!</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -49,7 +76,7 @@
     </div>
 </body>
 <script>
-    let imgurUrlPattern = /^http(?:s)?\:\/{2}imgur\.com\/a\/(.*)$/;
+    let imgurUrlPattern = /^http(?:s)?\:\/{2}(?:m\.)?imgur\.com\/(?:a|gallery)\/(.*)$/;
     let vue = new Vue({
         el: '#vue',
         data: {
@@ -69,6 +96,9 @@
             },
             baseContainerStyle() {
                 return this.showLoader ? `background-color: #fff; opacity: 0.5;` : '';
+            },
+            currentImageImgurLink() {
+                return this.currentImage.id ? `https://imgur.com/${this.currentImage.id}` : '';
             }
         },
         mounted() {

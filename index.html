@@ -33,7 +33,7 @@
                     <div style="margin-top: 1.25rem;">
                         <span>{{currentImage.description}}</span>
                         <ul class="list-inline" style=" margin-bottom: 0;">
-                            <li class="list-inline-item">Album: <a :href="albumUrl" target="_blank">{{title}}</a></li>
+                            <li class="list-inline-item">Album: <a :href="albumUrl" target="_blank">{{album.title}}</a></li>
                             <li class="list-inline-item"><a :href="currentImageImgurLink" target="_blank">Open this image on imgur</a></li>
                         </ul>
                     </div>
@@ -80,6 +80,7 @@
     let vue = new Vue({
         el: '#vue',
         data: {
+            album: {},
             currentImage: {},
             albumUrl: '',
             message: false,
@@ -106,19 +107,24 @@
             if (!!hash && hash.length > 1) {
                 let albumId = hash.substr(1);
                 this.albumUrl = `https://imgur.com/a/${albumId}`;
-                this.shuffle(albumId);
+                this.getAlbum(albumId);
             }
         },
         methods: {
             onBtnClick(albumLink) {
                 if (!imgurUrlPattern.test(albumLink)) {
-                    throw 'This is not imgur-album url';
+                    this.message = 'This is not imgur-album url';
+                    $('#errorModal').modal();
                     return;
                 }
                 let albumId = imgurUrlPattern.exec(albumLink)[1];
-                this.shuffle(albumId);
+                if (albumId != this.album.id) {
+                    this.getAlbum(albumId);
+                } else {
+                    this.shuffle();
+                }
             },
-            shuffle(albumId) {
+            getAlbum(albumId) {
                 this.showLoader = true;
                 fetch(`https://api.imgur.com/3/album/${albumId}`, {
                     headers: {
@@ -134,50 +140,23 @@
                 })
                 .then(json => {
                     if (json.data && json.data.images) {
-                        this.images = json.data.images;
-                        this.title = json.data.title;
-                        return fetch('https://api.random.org/json-rpc/1/invoke', {
-                            body: JSON.stringify({
-                                "jsonrpc": "2.0",
-                                "method": "generateIntegers",
-                                "params": {
-                                    "apiKey": "14192d4a-d37a-46f6-b47f-38c6d474dbf3",
-                                    "n": 1,
-                                    "min": 0,
-                                    "max": this.images.length - 1,
-                                    "replacement": true
-                                },
-                                "id": 42
-                            }),
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            }
-                        })
-                    } else {
-                        throw 'There was an error while imgur data processing';
-                    }
-                })
-                .then(result => {
-                    if (result.ok) {
-                        return result.json()
-                    } else {
-                        throw 'There was an error while getting a random number';
-                    }
-                })
-                .then(json => {
-                    if (json.result && json.result.random && json.result.random.data) {
-                        this.currentImage = this.images[json.result.random.data[0]];
+                        this.album = json.data;
                         this.showLoader = false;
                         window.location.hash = `#${albumId}`;
+                        this.shuffle();
+                    } else {
+                        throw 'This album corrupted or does not have images';
                     }
                 })
                 .catch(err => {
                     this.showLoader = false;
-                    this.title = '';
                     this.message = err;
                     $('#errorModal').modal();
                 })
+            },
+            shuffle() {
+                let images = this.album.images;
+                this.currentImage = images[Math.floor(Math.random()*images.length)];
             }
         }
     });
